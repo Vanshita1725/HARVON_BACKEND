@@ -9,6 +9,20 @@ const generateToken = (id) => {
   });
 };
 
+// Helper to build absolute profile photo URL or fallback to static default
+const buildProfilePhotoUrl = (req, profilePhotoPath) => {
+  const host = req && req.get ? req.get('host') : process.env.HOST || 'localhost:5000';
+  const protocol = req && req.protocol ? req.protocol : 'http';
+
+  if (profilePhotoPath) {
+    // profilePhotoPath is stored like '/uploads/filename.ext'
+    return `${protocol}://${host}${profilePhotoPath}`;
+  }
+
+  // fallback to a static image in public/profile
+  return `${protocol}://${host}/public/profile/staticprofile.jpeg`;
+};
+
 exports.register = async (req, res) => {
   try {
     const { name, email, password, phoneNumber } = req.body || {};
@@ -52,7 +66,7 @@ exports.register = async (req, res) => {
         name: user.name,
         email: user.email,
         phoneNumber: user.phoneNumber,
-        profilePhoto: user.profilePhoto
+        profilePhoto: buildProfilePhotoUrl(req, user.profilePhoto)
       }
     });
   } catch (error) {
@@ -69,19 +83,31 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    const { email, password, phoneNumber, phone, identifier } = req.body || {};
 
     if (!req.body || Object.keys(req.body).length === 0) {
       console.error('Login: missing or invalid body. Headers:', req.headers);
       console.error('Login: rawBody:', req.rawBody);
       return res.status(400).json({ success: false, message: 'Request body is missing or invalid JSON' });
     }
+    // Accept either email or phone (keys allowed: `identifier`, `email`, `phoneNumber`, `phone`)
+    const rawId = identifier || email || phoneNumber || phone;
+    const id = rawId ? rawId.toString().trim() : '';
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide an email and password' });
+    if (!id || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide an email or phone number and password' });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    let user;
+
+    // If id contains @ treat as email, otherwise treat as phone number
+    if (/@/.test(id)) {
+      user = await User.findOne({ email: id }).select('+password');
+    } else {
+      // Normalize basic phone input by removing spaces
+      const phoneLookup = id.replace(/\s+/g, '');
+      user = await User.findOne({ phoneNumber: phoneLookup }).select('+password');
+    }
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -102,7 +128,9 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        profilePhoto: buildProfilePhotoUrl(req, user.profilePhoto)
       }
     });
   } catch (error) {
@@ -122,7 +150,7 @@ exports.getMe = async (req, res) => {
         name: user.name,
         email: user.email,
         phoneNumber: user.phoneNumber,
-        profilePhoto: user.profilePhoto,
+        profilePhoto: buildProfilePhotoUrl(req, user.profilePhoto),
         createdAt: user.createdAt
       }
     });
@@ -173,7 +201,7 @@ exports.updateProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         phoneNumber: user.phoneNumber,
-        profilePhoto: user.profilePhoto
+        profilePhoto: buildProfilePhotoUrl(req, user.profilePhoto)
       }
     });
   } catch (error) {
@@ -218,6 +246,32 @@ exports.deleteProfile = async (req, res) => {
     await User.findByIdAndDelete(user._id);
 
     res.status(200).json({ success: true, message: 'User profile deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Public: Get a user's profile by id (returns limited fields)
+exports.getProfileById = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        profilePhoto: buildProfilePhotoUrl(req, user.profilePhoto)
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

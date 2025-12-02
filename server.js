@@ -25,6 +25,8 @@ app.options('*', cors({ origin: allowedOrigins, credentials: true }));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'));
+// Serve public assets (default profile image, etc.)
+app.use('/public', express.static('public'));
 
 // Handle invalid JSON payloads from express.json()
 app.use((err, req, res, next) => {
