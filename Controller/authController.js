@@ -2,6 +2,7 @@ const User = require('../Models/User');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
+const otpUtil = require('../utils/otp');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -135,6 +136,40 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Send OTP to a phone number (public). Frontend should call this before registration or verification.
+exports.sendOtp = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body || {};
+    if (!phoneNumber) return res.status(400).json({ success: false, message: 'phoneNumber is required' });
+
+    const result = await otpUtil.sendOtp(phoneNumber, { ttl: 5 * 60 * 1000 });
+
+    const response = { success: true, message: 'OTP sent' };
+    if (result.OTP) response.OTP = result.OTP;
+
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error('sendOtp error:', error.message);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Verify OTP for a phone number
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { phoneNumber, code } = req.body || {};
+    if (!phoneNumber || !code) return res.status(400).json({ success: false, message: 'phoneNumber and code are required' });
+
+    const result = otpUtil.verifyOtp(phoneNumber, code);
+    if (!result.success) return res.status(400).json({ success: false, message: result.message });
+
+    return res.status(200).json({ success: true, message: 'OTP verified' });
+  } catch (error) {
+    console.error('verifyOtp error:', error.message);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
