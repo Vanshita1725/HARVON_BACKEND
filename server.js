@@ -48,6 +48,7 @@ mongoose.connect(process.env.DATABASE_URL)
 const authRoutes = require('./Routes/authRoutes');
 const categoryRoutes = require('./Routes/categoryRoutes');
 const productRoutes = require('./Routes/productRoutes');
+const addressRoutes = require('./Routes/addressRoutes');
 
 // Better Mongoose connection logging
 const db = mongoose.connection;
@@ -59,6 +60,7 @@ db.on('disconnected', () => console.log('Mongoose event: disconnected'));
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/addresses', addressRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
