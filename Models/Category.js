@@ -7,14 +7,19 @@ const categorySchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  slug: {
+    type: String,
+    lowercase: true,
+    trim: true
+  },
   description: {
     type: String,
     default: ''
   },
-  isActive: {
-    type: Boolean,
-    default: true
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-}, { timestamps: true });
+});
 
 module.exports = mongoose.model('Category', categorySchema);

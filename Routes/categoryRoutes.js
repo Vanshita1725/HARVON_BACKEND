@@ -1,16 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const { createCategory, getCategories, getCategoryById, updateCategory, deleteCategory } = require('../Controller/productController');
 const { protect } = require('../middleware/auth');
-const categoryController = require('../Controller/categoryController');
 
-// Admin routes (protected)
-router.post('/admin', protect, categoryController.createCategory);
-router.put('/admin/:id', protect, categoryController.updateCategory);
-router.delete('/admin/:id', protect, categoryController.deleteCategory);
-router.get('/admin', protect, categoryController.getCategoriesAdmin);
+// Public
+router.get('/', getCategories);
+router.get('/:id', getCategoryById);
 
-// Public/user routes
-router.get('/', categoryController.getCategoriesUser);
-router.get('/:id', categoryController.getCategoryById);
+// Protected (admin or authenticated users)
+router.post('/', protect, createCategory);
+router.put('/:id', protect, updateCategory);
+router.delete('/:id', protect, deleteCategory);
 
 module.exports = router;
