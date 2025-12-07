@@ -49,6 +49,7 @@ const authRoutes = require('./Routes/authRoutes');
 const categoryRoutes = require('./Routes/categoryRoutes');
 const productRoutes = require('./Routes/productRoutes');
 const addressRoutes = require('./Routes/addressRoutes');
+const wishlistRoutes = require('./Routes/wishlistRoutes');
 
 // Better Mongoose connection logging
 const db = mongoose.connection;
@@ -61,6 +62,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
